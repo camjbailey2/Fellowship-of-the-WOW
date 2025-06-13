@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fellowship of WOW - XP Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c;
+            color: #f7fafc;
+        }
+        .font-fantasy { font-family: 'MedievalSharp', cursive; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #2d3748; }
+        ::-webkit-scrollbar-thumb { background: #a0aec0; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #718096; }
+        .quest-card {
+            background: rgba(45, 55, 72, 0.8);
+            border: 1px solid #718096;
+            backdrop-filter: blur(5px);
+        }
+        .leaderboard-table th { color: #fbd38d; }
+        .btn-primary {
+            background-image: linear-gradient(to right, #d69e2e, #b7791f);
+            border: 1px solid #fbd38d;
+        }
+        .btn-primary:hover { background-image: linear-gradient(to right, #b7791f, #975a16); }
+        .btn-danger {
+            background-image: linear-gradient(to right, #c53030, #9b2c2c);
+            border: 1px solid #fc8181;
+        }
+        .btn-danger:hover { background-image: linear-gradient(to right, #9b2c2c, #742a2a); }
+        .modal {
+            display: none; position: fixed; z-index: 1000; left: 0; top: 0;
+            width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6);
+            align-items: center; justify-content: center;
+        }
+        .modal-content { background-color: #2d3748; border: 1px solid #fbd38d; }
+        .xp-input-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+        .xp-control { display: flex; justify-content: space-between; align-items: center; }
+        .xp-control label { 
+            font-size: 0.9rem; 
+            font-weight: 500; 
+            color: #fbd38d;
+            cursor: help;
+            border-bottom: 1px dotted #fbd38d;
+        }
+        .xp-stepper { display: flex; align-items: center; gap: 0.5rem; }
+        .xp-btn {
+            background-color: #4a5568; border: 1px solid #a0aec0; color: white;
+            width: 2.25rem; height: 2.25rem; border-radius: 9999px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 1.5rem; cursor: pointer; transition: all 0.2s ease-in-out;
+        }
+        .xp-btn:hover { background-color: #718096; transform: scale(1.1); }
+        .xp-value { font-size: 1.25rem; font-weight: bold; color: #fbd38d; min-width: 2rem; text-align: center; }
+        .admin-btn {
+            background-color: #4a5568; border: 1px solid #718096; color: white;
+            padding: 0.25rem 0.5rem; border-radius: 0.5rem; font-size: 0.875rem;
+            transition: background-color 0.2s;
+            line-height: 1;
+        }
+        .admin-btn:hover { background-color: #2d3748; }
+        .admin-btn.plus:hover { color: #68d391; }
+        .admin-btn.minus:hover { color: #fc8181; }
+        #custom-tooltip {
+            position: absolute; display: none; padding: 0.75rem;
+            background-color: #1a202c; border: 1px solid #fbd38d;
+            border-radius: 0.5rem; color: #f7fafc; font-size: 0.875rem;
+            z-index: 2000; pointer-events: none; opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+        }
+        @keyframes celebration-animation {
+            0% { transform: scale(0.7); opacity: 0; }
+            80% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        #milestone-modal .modal-content {
+             border: 2px solid #fbd38d;
+             box-shadow: 0 0 20px #fbd38d, 0 0 40px rgba(251, 211, 141, 0.5);
+             animation: celebration-animation 0.5s ease-out;
+        }
+        #milestone-icon { font-size: 4rem; margin-bottom: 1rem; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200">
+
+    <div id="app" class="container mx-auto p-4 md:p-8 max-w-7xl">
+        <header class="text-center mb-8">
+            <div class="flex justify-center items-center gap-4 md:gap-6">
+                <img src="https://i.ibb.co/RkCQb6hs/img-E04-Ms-In2-VA0-QAhjv4xlt9x-Wo-removebg-preview.png" alt="Wizard Octopus" class="h-20 md:h-24">
+                <h1 class="text-5xl md:text-6xl font-fantasy text-yellow-400">Fellowship of the WOW</h1>
+            </div>
+            <p class="text-lg text-gray-400 mt-2">A Gamified Quest for Community Care Excellence</p>
+            <div id="auth-status" class="mt-4 text-xs text-gray-500">
+                <p>Connecting to the realm...</p>
+                <p>User ID: <span id="userIdDisplay" class="font-mono">...</span></p>
+            </div>
+        </header>
+        
+        <div id="loading" class="text-center text-yellow-400"><p>Summoning the Leaderboard...</p></div>
+
+        <main id="main-content" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-1 space-y-8">
+                <div class="quest-card p-6 rounded-lg shadow-lg">
+                    <h2 class="text-2xl font-fantasy text-yellow-400 border-b border-gray-600 pb-2 mb-4">Log Your Feats</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="team-member-select" class="block text-sm font-medium text-gray-300 mb-1">Select Team Member</label>
+                            <select id="team-member-select" class="w-full bg-gray-700 border border-gray-600 rounded-md p-2 text-white focus:ring-yellow-500 focus:border-yellow-500 disabled:opacity-75 disabled:cursor-not-allowed"></select>
+                        </div>
+                        <!-- NEW: Admin target selection dropdown -->
+                        <div id="admin-target-container" class="hidden">
+                            <label for="admin-target-select" class="block text-sm font-medium text-gray-300 mb-1">Assign Feats To:</label>
+                            <select id="admin-target-select" class="w-full bg-gray-700 border border-gray-600 rounded-md p-2 text-white focus:ring-yellow-500 focus:border-yellow-500"></select>
+                        </div>
+                        <div id="xp-controls-container" class="xp-input-grid"></div>
+                        <button id="add-xp-button" class="w-full btn-primary text-white font-bold py-3 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 mt-4">Add XP</button>
+                    </div>
+                </div>
+                <div class="quest-card p-6 rounded-lg shadow-lg">
+                    <h2 class="text-2xl font-fantasy text-yellow-400 border-b border-gray-600 pb-2 mb-4">Weekly Quests</h2>
+                     <div class="space-y-4">
+                        <div>
+                            <h3 class="font-bold text-yellow-500">Quest 1: The Shield of Service</h3>
+                            <p class="text-sm text-gray-300 mt-1">As a team, achieve a 95% or higher Service Rate!</p>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-yellow-500">Quest 2: The Scroll of Sages</h3>
+                            <p class="text-sm text-gray-300 mt-1">The fellowship must collect 10 pieces of WOW feedback.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="leaderboard-section" class="lg:col-span-2 quest-card p-6 rounded-lg shadow-lg">
+                <h2 class="text-3xl font-fantasy text-yellow-400 border-b border-gray-600 pb-2 mb-4">Leaderboard of Heroes</h2>
+                <div class="overflow-x-auto">
+                    <table class="leaderboard-table w-full text-left">
+                        <thead id="leaderboard-head"></thead>
+                        <tbody id="leaderboard-body"></tbody>
+                    </table>
+                </div>
+                <div id="admin-actions" class="mt-6 hidden">
+                     <button id="reset-scores-button" class="w-full btn-danger text-white font-bold py-3 px-4 rounded-lg shadow-md">Reset All Scores</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="notification-modal" class="modal"><div class="modal-content max-w-sm mx-auto p-6 rounded-lg shadow-lg text-center"><p id="modal-message" class="text-lg mb-4"></p><button id="close-modal-button" class="btn-primary text-white font-bold py-2 px-6 rounded-lg">Continue</button></div></div>
+    
+    <div id="password-modal" class="modal">
+        <div class="modal-content max-w-sm mx-auto p-6 rounded-lg shadow-lg">
+            <h3 class="text-xl font-bold text-yellow-400 mb-4">Admin Access Required</h3>
+            <p class="text-gray-300 mb-4">Please enter the password to proceed.</p>
+            <input type="password" id="password-input" class="w-full bg-gray-800 rounded p-2 mb-4 border border-gray-600 focus:ring-yellow-500 focus:border-yellow-500">
+            <p id="password-error" class="text-red-400 text-sm mb-4 hidden">Incorrect password. Please try again.</p>
+            <div class="flex justify-end gap-4">
+                <button id="cancel-password-button" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-lg">Cancel</button>
+                <button id="submit-password-button" class="btn-primary text-white font-bold py-2 px-6 rounded-lg">Submit</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="reset-confirm-modal" class="modal">
+        <div class="modal-content max-w-sm mx-auto p-6 rounded-lg shadow-lg">
+            <h3 class="text-xl font-bold text-yellow-400 mb-4">Confirm Reset</h3>
+            <p class="text-gray-300 mb-4">Are you sure you want to reset all scores to 0? This action cannot be undone.</p>
+            <div class="flex justify-end gap-4">
+                <button id="cancel-reset-button" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-lg">Cancel</button>
+                <button id="confirm-reset-button" class="btn-danger text-white font-bold py-2 px-6 rounded-lg">Yes, Reset Scores</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="milestone-modal" class="modal">
+        <div class="modal-content max-w-md mx-auto p-8 rounded-lg shadow-lg text-center">
+            <div id="milestone-icon">🎉</div>
+            <h3 id="milestone-title" class="text-3xl font-fantasy text-yellow-300 mb-2">Milestone Reached!</h3>
+            <p id="milestone-message" class="text-lg text-gray-200 mb-6"></p>
+            <button id="close-milestone-button" class="btn-primary text-white font-bold py-2 px-8 rounded-lg">Awesome!</button>
+        </div>
+    </div>
+
+    <div id="custom-tooltip"></div>
+
+
+    <script type="module">
+        const firebaseConfig = {
+          apiKey: "AIzaSyCia3fMujsDbrbYXuj7smOlEAhwGypuMEM",
+          authDomain: "fellowship-of-the-wow.firebaseapp.com",
+          projectId: "fellowship-of-the-wow",
+          storageBucket: "fellowship-of-the-wow.appspot.com",
+          messagingSenderId: "58799370966",
+          appId: "1:58799370966:web:208f09ca1b726e1d874f77"
+        };
+        
+        import { initializeApp as fbInitializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, onSnapshot, getDocs, setDoc, updateDoc, increment, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const app = fbInitializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const xpCollectionRef = collection(db, `xp_tracker`);
+
+        const loadingEl = document.getElementById('loading');
+        const mainContentEl = document.getElementById('main-content');
+        const memberSelect = document.getElementById('team-member-select');
+        const adminTargetContainer = document.getElementById('admin-target-container');
+        const adminTargetSelect = document.getElementById('admin-target-select');
+        const leaderboardBody = document.getElementById('leaderboard-body');
+        const leaderboardHead = document.getElementById('leaderboard-head');
+        const adminActionsEl = document.getElementById('admin-actions');
+        const resetScoresButton = document.getElementById('reset-scores-button');
+        const xpControlsContainer = document.getElementById('xp-controls-container');
+        const addXpButton = document.getElementById('add-xp-button');
+        const tooltipEl = document.getElementById('custom-tooltip');
+        
+        const passwordModal = document.getElementById('password-modal');
+        const passwordInput = document.getElementById('password-input');
+        const passwordError = document.getElementById('password-error');
+        const cancelPasswordButton = document.getElementById('cancel-password-button');
+        const submitPasswordButton = document.getElementById('submit-password-button');
+        const resetConfirmModal = document.getElementById('reset-confirm-modal');
+        const cancelResetButton = document.getElementById('cancel-reset-button');
+        const confirmResetButton = document.getElementById('confirm-reset-button');
+        const modal = document.getElementById('notification-modal');
+        const modalMessage = document.getElementById('modal-message');
+        const closeModalButton = document.getElementById('close-modal-button');
+        const userIdDisplay = document.getElementById('userIdDisplay');
+        const milestoneModal = document.getElementById('milestone-modal');
+        const milestoneMessage = document.getElementById('milestone-message');
+        const closeMilestoneButton = document.getElementById('close-milestone-button');
+
+        const teamMembers = [ "Alison Mullen", "Cam Bailey", "Claudia España", "Courtney Stringer", "Elizabeth Moeller", "Elyse Peck", "Hannah Freedman", "Jessica Jarrell", "Khayla McGowan", "Lauren Hughes", "Megan Oliden", "Nicole Huyser", "Shannon Cyntje" ];
+        const adminMembers = ["Khayla McGowan", "Claudia España"];
+        
+        const metrics = [ 
+            { id: 'nps', label: 'NPS 10', points: 10 }, 
+            { id: 'quality', label: 'High Quality Score', points: 10 }, 
+            { id: 'wow', label: 'WOW Feedback', points: 8 }, 
+            { id: 'resolution', label: 'Fast Resolution', points: 7 }, 
+            { id: 'accuracy', label: 'Accuracy Check', points: 4 }, 
+            { id: 'positive', label: 'Positive Comment', points: 3 }, 
+            { id: 'reviewed', label: 'Order Reviewed', points: 2 },
+            { id: 'attention', label: 'Service/Reviewer Attentions Completed', points: 2 },
+            { id: 'email', label: 'Email Responded To', points: 2 },
+            { id: 'callchat', label: 'Call/Chat Handled', points: 2 },
+            { id: 'resolved', label: 'Problem Resolved', points: 2 },
+        ];
+
+        let currentUserId = null;
+        let localLeaderboardData = [];
+        let isAdmin = false;
+        let hasSelectedUser = false;
+        let previousLeaderboardData = [];
+
+        function showNotification(message) { modalMessage.textContent = message; modal.style.display = 'flex'; }
+        closeModalButton.onclick = () => { modal.style.display = 'none'; };
+        
+        function populateMemberSelect() { 
+             memberSelect.innerHTML = `<option value="" disabled selected>Select your name...</option>` + teamMembers.map(name => `<option value="${name}">${name}</option>`).join('');
+        }
+        
+        function createXPControls() {
+            xpControlsContainer.innerHTML = metrics.map(metric => `
+                <div class="xp-control">
+                    <label id="label-${metric.id}" data-metric-id="${metric.id}">${metric.label} (+${metric.points} XP)</label>
+                    <div class="xp-stepper">
+                        <button class="xp-btn minus" data-metric-id="${metric.id}">-</button>
+                        <span id="${metric.id}-value" class="xp-value">0</span>
+                        <button class="xp-btn plus" data-metric-id="${metric.id}">+</button>
+                    </div>
+                </div>`).join('');
+        }
+        function clearInputs() { xpControlsContainer.querySelectorAll('.xp-value').forEach(el => { el.textContent = '0'; }); }
+
+        function renderLeaderboard() {
+            const visibleMembers = isAdmin ? [...localLeaderboardData] : localLeaderboardData.filter(member => member.xp > 0);
+            const rankedMembers = visibleMembers.sort((a, b) => b.xp - a.xp);
+            
+            leaderboardHead.innerHTML = `
+                <tr>
+                    <th class="p-3">Rank</th>
+                    <th class="p-3">Team Member</th>
+                    <th class="p-3 text-right">Total XP</th>
+                    ${isAdmin ? '<th class="p-3 text-center">Admin Controls</th>' : ''}
+                </tr>`;
+
+            if (rankedMembers.length === 0) {
+                 leaderboardBody.innerHTML = `<tr><td colspan="${isAdmin ? 4:3}" class="text-center p-8 text-gray-400">No heroes have earned XP yet. The quest awaits!</td></tr>`;
+            } else {
+                 leaderboardBody.innerHTML = rankedMembers.map((member, index) => {
+                    const rank = isAdmin ? (localLeaderboardData.sort((a,b) => b.xp-a.xp).findIndex(m => m.id === member.id) + 1) : index + 1;
+                    let rankDisplay = rank;
+                    if (member.xp > 0) {
+                         if (rank === 1) rankDisplay = '🥇'; else if (rank === 2) rankDisplay = '🥈'; else if (rank === 3) rankDisplay = '🥉';
+                    }
+                    const adminControls = isAdmin ? `
+                        <td class="p-3 text-center">
+                            <div class="flex justify-center items-center gap-1.5">
+                                <button data-name="${member.name}" data-amount="-5" class="admin-btn minus">-5</button>
+                                <button data-name="${member.name}" data-amount="-1" class="admin-btn minus">-1</button>
+                                <button data-name="${member.name}" data-amount="1" class="admin-btn plus">+1</button>
+                                <button data-name="${member.name}" data-amount="5" class="admin-btn plus">+5</button>
+                            </div>
+                        </td>
+                    ` : '';
+                    return `
+                        <tr class="border-b border-gray-700 hover:bg-gray-700/50">
+                            <td class="p-3 text-lg text-center font-bold">${rankDisplay}</td>
+                            <td class="p-3 font-medium">${member.name}</td>
+                            <td class="p-3 text-right font-bold text-yellow-300">${member.xp.toLocaleString()} XP</td>
+                            ${adminControls}
+                        </tr>`;
+                }).join('');
+            }
+            adminActionsEl.classList.toggle('hidden', !isAdmin);
+        }
+        
+        async function adjustPlayerXP(name, amount) {
+            const memberDocRef = doc(xpCollectionRef, name);
+            try {
+                const currentMember = localLeaderboardData.find(m => m.name === name);
+                if (currentMember.xp + amount < 0) {
+                    await updateDoc(memberDocRef, { xp: 0 });
+                } else {
+                    await updateDoc(memberDocRef, { xp: increment(amount) });
+                }
+            } catch (e) {
+                showNotification("A magical mishap occurred. Could not adjust XP.");
+            }
+        }
+        
+        async function logPlayerFeats(name, featsToAdd, totalXp) {
+            const memberDocRef = doc(xpCollectionRef, name);
+            const updateData = { xp: increment(totalXp) };
+            for (const featId in featsToAdd) {
+                if (featsToAdd[featId] > 0) {
+                    updateData[`feats.${featId}`] = increment(featsToAdd[featId]);
+                }
+            }
+            try {
+                await updateDoc(memberDocRef, updateData);
+                showNotification(`${totalXp} XP added for ${name}!`);
+                clearInputs();
+            } catch(e) {
+                 showNotification("A magical mishap occurred. Could not log feats.");
+            }
+        }
+
+        async function handleAddXp() {
+            if (!hasSelectedUser) { showNotification("Please select your name from the list first."); return; }
+            let targetMember = memberSelect.value;
+            if (isAdmin) {
+                targetMember = adminTargetSelect.value;
+            }
+            let totalXpToAdd = 0;
+            const featsToAdd = {};
+            metrics.forEach(metric => {
+                const valueEl = document.getElementById(`${metric.id}-value`);
+                const count = parseInt(valueEl.textContent) || 0;
+                if(count > 0) {
+                    featsToAdd[metric.id] = count;
+                    totalXpToAdd += count * metric.points;
+                }
+            });
+            if (totalXpToAdd === 0) { showNotification("No feats were entered."); return; }
+            addXpButton.disabled = true; addXpButton.textContent = "Inscribing...";
+            try { await logPlayerFeats(targetMember, featsToAdd, totalXpToAdd); } 
+            finally { addXpButton.disabled = false; addXpButton.textContent = "Add XP"; }
+        }
+        
+        function populateAdminTargetSelect(adminName) {
+            adminTargetSelect.innerHTML = teamMembers.map(name => `<option value="${name}" ${name === adminName ? 'selected' : ''}>${name}</option>`).join('');
+        }
+
+        function handleSelectionChange(e) {
+            const selectedName = e.target.value;
+            if (adminMembers.includes(selectedName)) {
+                passwordModal.style.display = 'flex';
+                passwordInput.focus();
+            } else {
+                isAdmin = false;
+                adminTargetContainer.classList.add('hidden');
+                renderLeaderboard();
+            }
+            if (!hasSelectedUser && selectedName) {
+                hasSelectedUser = true;
+                memberSelect.disabled = true;
+            }
+        }
+
+        function handlePasswordSubmit() {
+            if (passwordInput.value.toLowerCase() === 'nintendo') {
+                isAdmin = true;
+                if (!hasSelectedUser) { hasSelectedUser = true; memberSelect.disabled = true; }
+                adminTargetContainer.classList.remove('hidden');
+                populateAdminTargetSelect(memberSelect.value);
+                passwordModal.style.display = 'none';
+                renderLeaderboard();
+            } else {
+                passwordError.classList.remove('hidden');
+            }
+            passwordInput.value = '';
+        }
+
+        function handlePasswordCancel() {
+            passwordModal.style.display = 'none';
+            memberSelect.value = "";
+            hasSelectedUser = false;
+            memberSelect.disabled = false;
+        }
+
+        async function handleResetAllScores() {
+            const batch = writeBatch(db);
+            const resetFeats = {};
+            metrics.forEach(m => { resetFeats[m.id] = 0; });
+            
+            teamMembers.forEach(name => {
+                const memberDocRef = doc(xpCollectionRef, name);
+                batch.update(memberDocRef, { xp: 0, feats: resetFeats });
+            });
+            try {
+                await batch.commit();
+                showNotification("All scores have been reset to 0!");
+            } catch (e) {
+                showNotification("A magical mishap occurred. Could not reset scores.");
+            }
+            resetConfirmModal.style.display = 'none';
+        }
+
+        function updateTooltips() {
+            metrics.forEach(metric => {
+                let champions = [];
+                let maxCount = 0;
+                localLeaderboardData.forEach(member => {
+                    const count = (member.feats && member.feats[metric.id]) || 0;
+                    if (count > 0 && count > maxCount) {
+                        maxCount = count;
+                        champions = [member.name];
+                    } else if (count > 0 && count === maxCount) {
+                        champions.push(member.name);
+                    }
+                });
+                const labelEl = document.getElementById(`label-${metric.id}`);
+                if (labelEl) {
+                    if (champions.length > 1) {
+                         labelEl.dataset.tooltip = `Champions: ${champions.join(', ')} (${maxCount})`;
+                    } else if (champions.length === 1) {
+                        labelEl.dataset.tooltip = `Champion: ${champions[0]} (${maxCount})`;
+                    } else {
+                        labelEl.dataset.tooltip = 'No champion for this feat yet.';
+                    }
+                }
+            });
+        }
+
+        function initializeApp(user) {
+            currentUserId = user.uid;
+            userIdDisplay.textContent = currentUserId.substring(0, 8) + '...';
+            populateMemberSelect();
+            createXPControls();
+            
+            addXpButton.addEventListener('click', handleAddXp);
+            memberSelect.addEventListener('change', handleSelectionChange);
+            submitPasswordButton.addEventListener('click', handlePasswordSubmit);
+            cancelPasswordButton.addEventListener('click', handlePasswordCancel);
+            passwordInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') handlePasswordSubmit(); });
+            resetScoresButton.addEventListener('click', () => { resetConfirmModal.style.display = 'flex'; });
+            cancelResetButton.addEventListener('click', () => { resetConfirmModal.style.display = 'none'; });
+            confirmResetButton.addEventListener('click', handleResetAllScores);
+            closeMilestoneButton.onclick = () => { milestoneModal.style.display = 'none'; };
+
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' || e.key === ' ') {
+                    if (modal.style.display === 'flex') {
+                        e.preventDefault(); modal.style.display = 'none';
+                    }
+                     if (milestoneModal.style.display === 'flex') {
+                        e.preventDefault(); milestoneModal.style.display = 'none';
+                    }
+                }
+            });
+
+            xpControlsContainer.addEventListener('click', (e) => {
+                const button = e.target.closest('.xp-btn');
+                if (button) {
+                    const metricId = button.dataset.metricId;
+                    const valueEl = document.getElementById(`${metricId}-value`);
+                    let currentValue = parseInt(valueEl.textContent);
+                    if (button.classList.contains('plus')) currentValue++;
+                    else if (button.classList.contains('minus') && currentValue > 0) currentValue--;
+                    valueEl.textContent = currentValue;
+                }
+            });
+
+            leaderboardBody.addEventListener('click', (e) => {
+                const button = e.target.closest('.admin-btn');
+                if (button && isAdmin) {
+                    const name = button.dataset.name;
+                    const amount = parseInt(button.dataset.amount);
+                    adjustPlayerXP(name, amount);
+                }
+            });
+            
+            xpControlsContainer.addEventListener('mouseover', (e) => {
+                const label = e.target.closest('label');
+                if (label && label.dataset.tooltip) {
+                    tooltipEl.textContent = label.dataset.tooltip;
+                    tooltipEl.style.display = 'block';
+                    tooltipEl.style.opacity = '1';
+                }
+            });
+            xpControlsContainer.addEventListener('mouseout', (e) => {
+                const label = e.target.closest('label');
+                if (label) {
+                    tooltipEl.style.opacity = '0';
+                    setTimeout(() => { tooltipEl.style.display = 'none'; }, 200);
+                }
+            });
+             xpControlsContainer.addEventListener('mousemove', (e) => {
+                tooltipEl.style.left = `${e.pageX + 15}px`;
+                tooltipEl.style.top = `${e.pageY + 15}px`;
+            });
+            
+            onSnapshot(xpCollectionRef, (snapshot) => {
+                const serverData = new Map(snapshot.docs.map(doc => [doc.id, doc.data()]));
+                const newLeaderboardData = teamMembers.map(name => {
+                    return serverData.has(name) ? { id: name, ...serverData.get(name) } : { id: name, name: name, xp: 0, feats: {} };
+                });
+
+                if(previousLeaderboardData.length > 0) {
+                    newLeaderboardData.forEach(newMember => {
+                        const oldMember = previousLeaderboardData.find(m => m.id === newMember.id);
+                        if(oldMember) {
+                            const oldXp = oldMember.xp || 0;
+                            const newXp = newMember.xp || 0;
+                            const milestones = [50, 100];
+                             for (const milestone of milestones) {
+                                if (oldXp < milestone && newXp >= milestone) {
+                                    milestoneMessage.textContent = `${newMember.name} has reached ${milestone} XP!`;
+                                    milestoneModal.style.display = 'flex';
+                                }
+                            }
+                        }
+                    });
+                }
+                
+                localLeaderboardData = newLeaderboardData;
+                previousLeaderboardData = JSON.parse(JSON.stringify(newLeaderboardData));
+
+                renderLeaderboard();
+                updateTooltips();
+                loadingEl.style.display = 'none';
+                mainContentEl.classList.remove('hidden');
+            });
+        }
+        
+        async function seedInitialData() {
+            const snapshot = await getDocs(xpCollectionRef);
+            const existingNames = new Set(snapshot.docs.map(doc => doc.id));
+            const newMembers = teamMembers.filter(name => !existingNames.has(name));
+            if (newMembers.length > 0) {
+                const resetFeats = {};
+                metrics.forEach(m => { resetFeats[m.id] = 0; });
+                const promises = newMembers.map(name => setDoc(doc(xpCollectionRef, name), { name: name, xp: 0, feats: resetFeats }));
+                await Promise.all(promises);
+            }
+        }
+
+        window.onload = () => {
+             onAuthStateChanged(auth, async (user) => {
+                if (user) {
+                    if (!currentUserId) {
+                        await seedInitialData();
+                        initializeApp(user);
+                    }
+                } else {
+                    signInAnonymously(auth).catch(error => { 
+                        console.error("Critical authentication failed:", error);
+                        document.getElementById('loading').innerHTML = `<p class="text-red-500">Could not connect to the realm. Please refresh the page.</p>`
+                    });
+                }
+            });
+        };
+    </script>
+</body>
+</html>
