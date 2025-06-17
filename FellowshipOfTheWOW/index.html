@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <script async defer src="https://apis.google.com/js/api.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -25,14 +26,18 @@
             backdrop-filter: blur(5px);
         }
         .leaderboard-table th { color: #fbd38d; }
+        .btn {
+            padding: 0.75rem 1rem; border-radius: 0.5rem; font-weight: bold;
+            transition: all 0.2s; text-align: center;
+        }
         .btn-primary {
             background-image: linear-gradient(to right, #d69e2e, #b7791f);
-            border: 1px solid #fbd38d;
+            border: 1px solid #fbd38d; color: white;
         }
         .btn-primary:hover { background-image: linear-gradient(to right, #b7791f, #975a16); }
         .btn-danger {
             background-image: linear-gradient(to right, #c53030, #9b2c2c);
-            border: 1px solid #fc8181;
+            border: 1px solid #fc8181; color: white;
         }
         .btn-danger:hover { background-image: linear-gradient(to right, #9b2c2c, #742a2a); }
         .modal {
@@ -44,11 +49,8 @@
         .xp-input-grid { display: grid; grid-template-columns: 1fr; gap: 1rem; }
         .xp-control { display: flex; justify-content: space-between; align-items: center; }
         .xp-control label { 
-            font-size: 0.9rem; 
-            font-weight: 500; 
-            color: #fbd38d;
-            cursor: help;
-            border-bottom: 1px dotted #fbd38d;
+            font-size: 0.9rem; font-weight: 500; color: #fbd38d;
+            cursor: help; border-bottom: 1px dotted #fbd38d;
         }
         .xp-stepper { display: flex; align-items: center; gap: 0.5rem; }
         .xp-btn {
@@ -62,8 +64,7 @@
         .admin-btn {
             background-color: #4a5568; border: 1px solid #718096; color: white;
             padding: 0.25rem 0.5rem; border-radius: 0.5rem; font-size: 0.875rem;
-            transition: background-color 0.2s;
-            line-height: 1;
+            transition: background-color 0.2s; line-height: 1;
         }
         .admin-btn:hover { background-color: #2d3748; }
         .admin-btn.plus:hover { color: #68d391; }
@@ -73,7 +74,7 @@
             background-color: #1a202c; border: 1px solid #fbd38d;
             border-radius: 0.5rem; color: #f7fafc; font-size: 0.875rem;
             z-index: 2000; pointer-events: none; opacity: 0;
-            transition: opacity 0.2s ease-in-out;
+            transition: opacity 0.2s ease-in-out; max-width: 250px;
         }
         @keyframes celebration-animation {
             0% { transform: scale(0.7); opacity: 0; }
@@ -86,6 +87,16 @@
              animation: celebration-animation 0.5s ease-out;
         }
         #milestone-icon { font-size: 4rem; margin-bottom: 1rem; }
+        .admin-input {
+            background-color: #4a5568; border: 1px solid #a0aec0; color: white;
+            border-radius: 0.25rem; padding: 0.25rem 0.5rem; width: 100%;
+        }
+        .admin-textarea { min-height: 60px; }
+        .winner-card {
+            background-color: rgba(251, 211, 141, 0.1);
+            border-left: 4px solid #fbd38d;
+            padding: 1rem;
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-200">
@@ -107,6 +118,7 @@
 
         <main id="main-content" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div class="lg:col-span-1 space-y-8">
+                <!-- Log Feats Card -->
                 <div class="quest-card p-6 rounded-lg shadow-lg">
                     <h2 class="text-2xl font-fantasy text-yellow-400 border-b border-gray-600 pb-2 mb-4">Log Your Feats</h2>
                     <div class="space-y-4">
@@ -114,82 +126,76 @@
                             <label for="team-member-select" class="block text-sm font-medium text-gray-300 mb-1">Select Team Member</label>
                             <select id="team-member-select" class="w-full bg-gray-700 border border-gray-600 rounded-md p-2 text-white focus:ring-yellow-500 focus:border-yellow-500 disabled:opacity-75 disabled:cursor-not-allowed"></select>
                         </div>
-                        <!-- NEW: Admin target selection dropdown -->
                         <div id="admin-target-container" class="hidden">
                             <label for="admin-target-select" class="block text-sm font-medium text-gray-300 mb-1">Assign Feats To:</label>
                             <select id="admin-target-select" class="w-full bg-gray-700 border border-gray-600 rounded-md p-2 text-white focus:ring-yellow-500 focus:border-yellow-500"></select>
                         </div>
                         <div id="xp-controls-container" class="xp-input-grid"></div>
-                        <button id="add-xp-button" class="w-full btn-primary text-white font-bold py-3 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 mt-4">Add XP</button>
+                        <button id="add-xp-button" class="btn btn-primary w-full mt-4">Add XP</button>
                     </div>
                 </div>
+
+                <!-- Admin: Adjust Feat XP -->
+                <div id="admin-feat-xp-section" class="hidden quest-card p-6 rounded-lg shadow-lg">
+                    <h2 class="text-2xl font-fantasy text-yellow-400 border-b border-gray-600 pb-2 mb-4">Adjust Feats</h2>
+                    <div id="feat-xp-inputs" class="space-y-4"></div>
+                    <button id="add-feat-btn" class="btn btn-primary w-full mt-4">Add New Feat</button>
+                    <button id="save-feat-xp-button" class="btn btn-primary w-full mt-4">Save Feats</button>
+                </div>
+
+                <!-- Weekly Quests -->
                 <div class="quest-card p-6 rounded-lg shadow-lg">
-                    <h2 class="text-2xl font-fantasy text-yellow-400 border-b border-gray-600 pb-2 mb-4">Weekly Quests</h2>
-                     <div class="space-y-4">
-                        <div>
-                            <h3 class="font-bold text-yellow-500">Quest 1: The Shield of Service</h3>
-                            <p class="text-sm text-gray-300 mt-1">As a team, achieve a 95% or higher Service Rate!</p>
+                    <div class="flex justify-between items-center border-b border-gray-600 pb-2 mb-4">
+                        <h2 class="text-2xl font-fantasy text-yellow-400">Weekly Quests</h2>
+                        <div id="admin-quest-controls" class="hidden flex gap-2">
+                            <button id="remove-quest-btn" class="admin-btn minus">-</button>
+                            <button id="add-quest-btn" class="admin-btn plus">+</button>
                         </div>
-                        <div>
-                            <h3 class="font-bold text-yellow-500">Quest 2: The Scroll of Sages</h3>
-                            <p class="text-sm text-gray-300 mt-1">The fellowship must collect 10 pieces of WOW feedback.</p>
-                        </div>
+                    </div>
+                    <div id="weekly-quests-container" class="space-y-4"></div>
+                    <div id="admin-quest-save-container" class="hidden mt-4">
+                        <button id="save-quests-btn" class="btn btn-primary w-full">Save Quests</button>
                     </div>
                 </div>
             </div>
             
-            <div id="leaderboard-section" class="lg:col-span-2 quest-card p-6 rounded-lg shadow-lg">
-                <h2 class="text-3xl font-fantasy text-yellow-400 border-b border-gray-600 pb-2 mb-4">Leaderboard of Heroes</h2>
-                <div class="overflow-x-auto">
-                    <table class="leaderboard-table w-full text-left">
-                        <thead id="leaderboard-head"></thead>
-                        <tbody id="leaderboard-body"></tbody>
-                    </table>
+            <div class="lg:col-span-2 space-y-8">
+                <!-- Leaderboard -->
+                <div id="leaderboard-section" class="quest-card p-6 rounded-lg shadow-lg">
+                    <h2 class="text-3xl font-fantasy text-yellow-400 border-b border-gray-600 pb-2 mb-4">Leaderboard of Heroes</h2>
+                    <div class="overflow-x-auto">
+                        <table class="leaderboard-table w-full text-left">
+                            <thead id="leaderboard-head"></thead>
+                            <tbody id="leaderboard-body"></tbody>
+                        </table>
+                    </div>
+                    <div id="admin-actions" class="mt-6 hidden">
+                         <button id="reset-scores-button" class="btn btn-danger w-full">Export & Reset Scores</button>
+                    </div>
                 </div>
-                <div id="admin-actions" class="mt-6 hidden">
-                     <button id="reset-scores-button" class="w-full btn-danger text-white font-bold py-3 px-4 rounded-lg shadow-md">Reset All Scores</button>
+                <!-- Last Week's Heroes -->
+                <div class="quest-card p-6 rounded-lg shadow-lg">
+                     <div class="flex justify-between items-center border-b border-gray-600 pb-2 mb-4">
+                        <h2 class="text-2xl font-fantasy text-yellow-400">Last Week's Heroes</h2>
+                        <div id="admin-winner-controls" class="hidden flex gap-2">
+                            <button id="remove-winner-btn" class="admin-btn minus">-</button>
+                            <button id="add-winner-btn" class="admin-btn plus">+</button>
+                        </div>
+                    </div>
+                    <div id="weekly-winners-container" class="space-y-4"></div>
+                     <div id="admin-winner-save-container" class="hidden mt-4">
+                        <button id="save-winners-btn" class="btn btn-primary w-full">Save Heroes</button>
+                    </div>
                 </div>
             </div>
         </main>
     </div>
 
-    <div id="notification-modal" class="modal"><div class="modal-content max-w-sm mx-auto p-6 rounded-lg shadow-lg text-center"><p id="modal-message" class="text-lg mb-4"></p><button id="close-modal-button" class="btn-primary text-white font-bold py-2 px-6 rounded-lg">Continue</button></div></div>
-    
-    <div id="password-modal" class="modal">
-        <div class="modal-content max-w-sm mx-auto p-6 rounded-lg shadow-lg">
-            <h3 class="text-xl font-bold text-yellow-400 mb-4">Admin Access Required</h3>
-            <p class="text-gray-300 mb-4">Please enter the password to proceed.</p>
-            <input type="password" id="password-input" class="w-full bg-gray-800 rounded p-2 mb-4 border border-gray-600 focus:ring-yellow-500 focus:border-yellow-500">
-            <p id="password-error" class="text-red-400 text-sm mb-4 hidden">Incorrect password. Please try again.</p>
-            <div class="flex justify-end gap-4">
-                <button id="cancel-password-button" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-lg">Cancel</button>
-                <button id="submit-password-button" class="btn-primary text-white font-bold py-2 px-6 rounded-lg">Submit</button>
-            </div>
-        </div>
-    </div>
-    
-    <div id="reset-confirm-modal" class="modal">
-        <div class="modal-content max-w-sm mx-auto p-6 rounded-lg shadow-lg">
-            <h3 class="text-xl font-bold text-yellow-400 mb-4">Confirm Reset</h3>
-            <p class="text-gray-300 mb-4">Are you sure you want to reset all scores to 0? This action cannot be undone.</p>
-            <div class="flex justify-end gap-4">
-                <button id="cancel-reset-button" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-lg">Cancel</button>
-                <button id="confirm-reset-button" class="btn-danger text-white font-bold py-2 px-6 rounded-lg">Yes, Reset Scores</button>
-            </div>
-        </div>
-    </div>
-    
-    <div id="milestone-modal" class="modal">
-        <div class="modal-content max-w-md mx-auto p-8 rounded-lg shadow-lg text-center">
-            <div id="milestone-icon">🎉</div>
-            <h3 id="milestone-title" class="text-3xl font-fantasy text-yellow-300 mb-2">Milestone Reached!</h3>
-            <p id="milestone-message" class="text-lg text-gray-200 mb-6"></p>
-            <button id="close-milestone-button" class="btn-primary text-white font-bold py-2 px-8 rounded-lg">Awesome!</button>
-        </div>
-    </div>
-
+    <div id="notification-modal" class="modal"><div class="modal-content max-w-sm mx-auto p-6 rounded-lg shadow-lg text-center"><p id="modal-message" class="text-lg mb-4"></p><button id="close-modal-button" class="btn btn-primary">Continue</button></div></div>
+    <div id="password-modal" class="modal"><div class="modal-content max-w-sm mx-auto p-6 rounded-lg"><h3 class="text-xl font-bold text-yellow-400 mb-4">Admin Access Required</h3><p class="text-gray-300 mb-4">Please enter the password.</p><input type="password" id="password-input" class="admin-input w-full mb-4"><p id="password-error" class="text-red-400 text-sm mb-4 hidden">Incorrect password.</p><div class="flex justify-end gap-4"><button id="cancel-password-button" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-lg">Cancel</button><button id="submit-password-button" class="btn btn-primary">Submit</button></div></div></div>
+    <div id="reset-confirm-modal" class="modal"><div class="modal-content max-w-sm mx-auto p-6 rounded-lg"><h3 class="text-xl font-bold text-yellow-400 mb-4">Confirm Export & Reset</h3><p class="text-gray-300 mb-4">This will export all scores to Google Sheets and then reset them to 0. This cannot be undone.</p><div class="flex justify-end gap-4"><button id="cancel-reset-button" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-lg">Cancel</button><button id="confirm-reset-button" class="btn btn-danger">Yes, Export & Reset</button></div></div></div>
+    <div id="milestone-modal" class="modal"><div class="modal-content max-w-md mx-auto p-8 rounded-lg shadow-lg text-center"><div id="milestone-icon">🎉</div><h3 id="milestone-title" class="text-3xl font-fantasy text-yellow-300 mb-2">Milestone Reached!</h3><p id="milestone-message" class="text-lg text-gray-200 mb-6"></p><button id="close-milestone-button" class="btn btn-primary">Awesome!</button></div></div>
     <div id="custom-tooltip"></div>
-
 
     <script type="module">
         const firebaseConfig = {
@@ -203,12 +209,17 @@
         
         import { initializeApp as fbInitializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, onSnapshot, getDocs, setDoc, updateDoc, increment, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, onSnapshot, getDocs, getDoc, setDoc, updateDoc, increment, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const GOOGLE_CLIENT_ID = '58799370966-gf7s7n3r1gh7ea17tct4g9jo32mb4n2j.apps.googleusercontent.com';
+        const GOOGLE_SPREADSHEET_ID = '1j3MD7Ys14dPjLfRINqtraKUdzYmPm81QqzdkVNNymWY';
+        const GOOGLE_SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
 
         const app = fbInitializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
         const xpCollectionRef = collection(db, `xp_tracker`);
+        const configRef = doc(db, 'app_config', 'main');
 
         const loadingEl = document.getElementById('loading');
         const mainContentEl = document.getElementById('main-content');
@@ -222,7 +233,6 @@
         const xpControlsContainer = document.getElementById('xp-controls-container');
         const addXpButton = document.getElementById('add-xp-button');
         const tooltipEl = document.getElementById('custom-tooltip');
-        
         const passwordModal = document.getElementById('password-modal');
         const passwordInput = document.getElementById('password-input');
         const passwordError = document.getElementById('password-error');
@@ -238,32 +248,37 @@
         const milestoneModal = document.getElementById('milestone-modal');
         const milestoneMessage = document.getElementById('milestone-message');
         const closeMilestoneButton = document.getElementById('close-milestone-button');
-
+        const adminFeatXpSection = document.getElementById('admin-feat-xp-section');
+        const featXpInputsContainer = document.getElementById('feat-xp-inputs');
+        const saveFeatXpButton = document.getElementById('save-feat-xp-button');
+        const addFeatBtn = document.getElementById('add-feat-btn');
+        const weeklyQuestsContainer = document.getElementById('weekly-quests-container');
+        const adminQuestControls = document.getElementById('admin-quest-controls');
+        const adminQuestSaveContainer = document.getElementById('admin-quest-save-container');
+        const saveQuestsBtn = document.getElementById('save-quests-btn');
+        const addQuestBtn = document.getElementById('add-quest-btn');
+        const removeQuestBtn = document.getElementById('remove-quest-btn');
+        const weeklyWinnersContainer = document.getElementById('weekly-winners-container');
+        const adminWinnerControls = document.getElementById('admin-winner-controls');
+        const adminWinnerSaveContainer = document.getElementById('admin-winner-save-container');
+        const saveWinnersBtn = document.getElementById('save-winners-btn');
+        const addWinnerBtn = document.getElementById('add-winner-btn');
+        const removeWinnerBtn = document.getElementById('remove-winner-btn');
+        
         const teamMembers = [ "Alison Mullen", "Cam Bailey", "Claudia España", "Courtney Stringer", "Elizabeth Moeller", "Elyse Peck", "Hannah Freedman", "Jessica Jarrell", "Khayla McGowan", "Lauren Hughes", "Megan Oliden", "Nicole Huyser", "Shannon Cyntje" ];
         const adminMembers = ["Khayla McGowan", "Claudia España"];
-        
-        const metrics = [ 
-            { id: 'nps', label: 'NPS 10', points: 10 }, 
-            { id: 'quality', label: 'High Quality Score', points: 10 }, 
-            { id: 'wow', label: 'WOW Feedback', points: 8 }, 
-            { id: 'resolution', label: 'Fast Resolution', points: 7 }, 
-            { id: 'accuracy', label: 'Accuracy Check', points: 4 }, 
-            { id: 'positive', label: 'Positive Comment', points: 3 }, 
-            { id: 'reviewed', label: 'Order Reviewed', points: 2 },
-            { id: 'attention', label: 'Service/Reviewer Attentions Completed', points: 2 },
-            { id: 'email', label: 'Email Responded To', points: 2 },
-            { id: 'callchat', label: 'Call/Chat Handled', points: 2 },
-            { id: 'resolved', label: 'Problem Resolved', points: 2 },
-        ];
-
+        let metrics = [];
+        let weeklyQuests = [];
+        let weeklyWinners = [];
         let currentUserId = null;
         let localLeaderboardData = [];
         let isAdmin = false;
         let hasSelectedUser = false;
         let previousLeaderboardData = [];
-
+        let gapiClient;
+        let tokenClient;
+        
         function showNotification(message) { modalMessage.textContent = message; modal.style.display = 'flex'; }
-        closeModalButton.onclick = () => { modal.style.display = 'none'; };
         
         function populateMemberSelect() { 
              memberSelect.innerHTML = `<option value="" disabled selected>Select your name...</option>` + teamMembers.map(name => `<option value="${name}">${name}</option>`).join('');
@@ -279,52 +294,103 @@
                         <button class="xp-btn plus" data-metric-id="${metric.id}">+</button>
                     </div>
                 </div>`).join('');
+            updateTooltips();
         }
         function clearInputs() { xpControlsContainer.querySelectorAll('.xp-value').forEach(el => { el.textContent = '0'; }); }
 
+        function renderAdminFeatXP() {
+            featXpInputsContainer.innerHTML = metrics.map(metric => `
+                <div class="space-y-1 pb-2 border border-gray-700 p-2 rounded-md">
+                    <div class="flex items-center justify-between gap-4">
+                        <div class="flex items-center gap-2 flex-grow">
+                            <button class="admin-btn minus !p-1 !w-6 !h-6 flex items-center justify-center" data-delete-metric-id="${metric.id}">X</button>
+                            <input type="text" id="label-input-${metric.id}" class="admin-input font-bold" value="${metric.label}" placeholder="Feat Name">
+                        </div>
+                        <input type="number" id="xp-input-${metric.id}" class="admin-input w-20 text-center" value="${metric.points}">
+                    </div>
+                    <textarea id="desc-input-${metric.id}" class="admin-input admin-textarea w-full text-sm !h-16" placeholder="Feat description...">${metric.description || ''}</textarea>
+                </div>
+            `).join('');
+        }
+
+        function renderWeeklyQuests() {
+            weeklyQuestsContainer.innerHTML = weeklyQuests.map((quest, index) => {
+                if(isAdmin) {
+                    return `
+                        <div class="space-y-2">
+                           <input type="text" data-quest-index="${index}" data-field="title" class="admin-input font-bold text-yellow-500" value="${quest.title}" placeholder="Quest Title">
+                           <textarea data-quest-index="${index}" data-field="content" class="admin-input text-sm text-gray-300 admin-textarea" placeholder="Quest description...">${quest.content}</textarea>
+                        </div>
+                    `;
+                }
+                return `
+                    <div>
+                        <h3 class="font-bold text-yellow-500">${quest.title}</h3>
+                        <p class="text-sm text-gray-300 mt-1">${quest.content}</p>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderWeeklyWinners() {
+             weeklyWinnersContainer.innerHTML = weeklyWinners.map((winner, index) => {
+                if(isAdmin) {
+                    return `
+                        <div class="space-y-2">
+                            <select data-winner-index="${index}" data-field="name" class="admin-input">
+                                <option value="">Select Winner</option>
+                                ${teamMembers.map(name => `<option value="${name}" ${winner.name === name ? 'selected' : ''}>${name}</option>`).join('')}
+                            </select>
+                           <input type="text" data-winner-index="${index}" data-field="comment" class="admin-input text-sm italic" value="${winner.comment}" placeholder="Reason for glory...">
+                        </div>
+                    `;
+                }
+                if (!winner.name) return '';
+                return `
+                    <div class="winner-card">
+                        <h3 class="font-bold text-yellow-400 text-lg">${winner.name}</h3>
+                        <p class="text-sm text-gray-300 italic">"${winner.comment}"</p>
+                    </div>
+                `;
+            }).join('');
+        }
+        
         function renderLeaderboard() {
             const visibleMembers = isAdmin ? [...localLeaderboardData] : localLeaderboardData.filter(member => member.xp > 0);
             const rankedMembers = visibleMembers.sort((a, b) => b.xp - a.xp);
-            
-            leaderboardHead.innerHTML = `
-                <tr>
-                    <th class="p-3">Rank</th>
-                    <th class="p-3">Team Member</th>
-                    <th class="p-3 text-right">Total XP</th>
-                    ${isAdmin ? '<th class="p-3 text-center">Admin Controls</th>' : ''}
-                </tr>`;
-
+            leaderboardHead.innerHTML = `<tr><th class="p-3">Rank</th><th class="p-3">Team Member</th><th class="p-3 text-right">Total XP</th>${isAdmin ? '<th class="p-3 text-center">Admin Controls</th>' : ''}</tr>`;
             if (rankedMembers.length === 0) {
-                 leaderboardBody.innerHTML = `<tr><td colspan="${isAdmin ? 4:3}" class="text-center p-8 text-gray-400">No heroes have earned XP yet. The quest awaits!</td></tr>`;
+                 leaderboardBody.innerHTML = `<tr><td colspan="${isAdmin ? 4:3}" class="text-center p-8 text-gray-400">No heroes have earned XP yet.</td></tr>`;
             } else {
                  leaderboardBody.innerHTML = rankedMembers.map((member, index) => {
                     const rank = isAdmin ? (localLeaderboardData.sort((a,b) => b.xp-a.xp).findIndex(m => m.id === member.id) + 1) : index + 1;
                     let rankDisplay = rank;
-                    if (member.xp > 0) {
-                         if (rank === 1) rankDisplay = '🥇'; else if (rank === 2) rankDisplay = '🥈'; else if (rank === 3) rankDisplay = '🥉';
-                    }
-                    const adminControls = isAdmin ? `
-                        <td class="p-3 text-center">
-                            <div class="flex justify-center items-center gap-1.5">
-                                <button data-name="${member.name}" data-amount="-5" class="admin-btn minus">-5</button>
-                                <button data-name="${member.name}" data-amount="-1" class="admin-btn minus">-1</button>
-                                <button data-name="${member.name}" data-amount="1" class="admin-btn plus">+1</button>
-                                <button data-name="${member.name}" data-amount="5" class="admin-btn plus">+5</button>
-                            </div>
-                        </td>
-                    ` : '';
-                    return `
-                        <tr class="border-b border-gray-700 hover:bg-gray-700/50">
-                            <td class="p-3 text-lg text-center font-bold">${rankDisplay}</td>
-                            <td class="p-3 font-medium">${member.name}</td>
-                            <td class="p-3 text-right font-bold text-yellow-300">${member.xp.toLocaleString()} XP</td>
-                            ${adminControls}
-                        </tr>`;
+                    if (member.xp > 0) { if (rank === 1) rankDisplay = '🥇'; else if (rank === 2) rankDisplay = '🥈'; else if (rank === 3) rankDisplay = '🥉';}
+                    const adminControls = isAdmin ? `<td class="p-3 text-center"><div class="flex justify-center items-center gap-1.5"><button data-name="${member.name}" data-amount="-5" class="admin-btn minus">-5</button><button data-name="${member.name}" data-amount="-1" class="admin-btn minus">-1</button><button data-name="${member.name}" data-amount="1" class="admin-btn plus">+1</button><button data-name="${member.name}" data-amount="5" class="admin-btn plus">+5</button></div></td>` : '';
+                    return `<tr class="border-b border-gray-700 hover:bg-gray-700/50"><td class="p-3 text-lg text-center font-bold">${rankDisplay}</td><td class="p-3 font-medium">${member.name}</td><td class="p-3 text-right font-bold text-yellow-300">${member.xp.toLocaleString()} XP</td>${adminControls}</tr>`;
                 }).join('');
             }
-            adminActionsEl.classList.toggle('hidden', !isAdmin);
         }
         
+        function toggleAdminUI(show) {
+            adminFeatXpSection.classList.toggle('hidden', !show);
+            adminQuestControls.classList.toggle('hidden', !show);
+            adminWinnerControls.classList.toggle('hidden', !show);
+            adminActionsEl.classList.toggle('hidden', !show);
+            adminQuestSaveContainer.classList.toggle('hidden', !show);
+            adminWinnerSaveContainer.classList.toggle('hidden', !show);
+            
+            if (show) {
+                adminTargetContainer.classList.remove('hidden');
+                populateAdminTargetSelect(memberSelect.value);
+            } else {
+                adminTargetContainer.classList.add('hidden');
+            }
+            renderWeeklyQuests();
+            renderWeeklyWinners();
+            renderLeaderboard();
+        }
+
         async function adjustPlayerXP(name, amount) {
             const memberDocRef = doc(xpCollectionRef, name);
             try {
@@ -334,9 +400,7 @@
                 } else {
                     await updateDoc(memberDocRef, { xp: increment(amount) });
                 }
-            } catch (e) {
-                showNotification("A magical mishap occurred. Could not adjust XP.");
-            }
+            } catch (e) { console.error("Failed to adjust XP", e); }
         }
         
         async function logPlayerFeats(name, featsToAdd, totalXp) {
@@ -351,17 +415,16 @@
                 await updateDoc(memberDocRef, updateData);
                 showNotification(`${totalXp} XP added for ${name}!`);
                 clearInputs();
-            } catch(e) {
-                 showNotification("A magical mishap occurred. Could not log feats.");
-            }
+            } catch(e) { showNotification("A magical mishap occurred."); }
+        }
+
+        async function updateConfig() {
+            await updateDoc(configRef, { metrics, weeklyQuests, weeklyWinners });
         }
 
         async function handleAddXp() {
-            if (!hasSelectedUser) { showNotification("Please select your name from the list first."); return; }
-            let targetMember = memberSelect.value;
-            if (isAdmin) {
-                targetMember = adminTargetSelect.value;
-            }
+            if (!hasSelectedUser) { showNotification("Please select your name first."); return; }
+            let targetMember = isAdmin ? adminTargetSelect.value : memberSelect.value;
             let totalXpToAdd = 0;
             const featsToAdd = {};
             metrics.forEach(metric => {
@@ -378,10 +441,6 @@
             finally { addXpButton.disabled = false; addXpButton.textContent = "Add XP"; }
         }
         
-        function populateAdminTargetSelect(adminName) {
-            adminTargetSelect.innerHTML = teamMembers.map(name => `<option value="${name}" ${name === adminName ? 'selected' : ''}>${name}</option>`).join('');
-        }
-
         function handleSelectionChange(e) {
             const selectedName = e.target.value;
             if (adminMembers.includes(selectedName)) {
@@ -389,8 +448,7 @@
                 passwordInput.focus();
             } else {
                 isAdmin = false;
-                adminTargetContainer.classList.add('hidden');
-                renderLeaderboard();
+                toggleAdminUI(false);
             }
             if (!hasSelectedUser && selectedName) {
                 hasSelectedUser = true;
@@ -402,10 +460,8 @@
             if (passwordInput.value.toLowerCase() === 'nintendo') {
                 isAdmin = true;
                 if (!hasSelectedUser) { hasSelectedUser = true; memberSelect.disabled = true; }
-                adminTargetContainer.classList.remove('hidden');
-                populateAdminTargetSelect(memberSelect.value);
                 passwordModal.style.display = 'none';
-                renderLeaderboard();
+                toggleAdminUI(true);
             } else {
                 passwordError.classList.remove('hidden');
             }
@@ -419,24 +475,65 @@
             memberSelect.disabled = false;
         }
 
-        async function handleResetAllScores() {
+        async function exportAndResetScores() {
+             resetConfirmModal.style.display = 'none';
+             showNotification('Authenticating with Google...');
+             tokenClient.callback = async (resp) => {
+                if (resp.error !== undefined) { throw (resp); }
+                showNotification('Exporting to Google Sheets...');
+                const today = new Date();
+                const dateString = `${today.getMonth() + 1}/${today.getDate()}/${today.getFullYear()}`;
+                
+                const headerRow = [`Export Date: ${dateString}`];
+                const columnHeaders = ["Team Member", "Total XP", ...metrics.map(m => m.label)];
+                
+                const dataRows = localLeaderboardData.map(member => {
+                    const row = [member.name, member.xp || 0];
+                    metrics.forEach(metric => { row.push((member.feats && member.feats[metric.id]) || 0); });
+                    return row;
+                });
+
+                const values = [headerRow, columnHeaders, ...dataRows, []];
+
+                try {
+                    await gapi.client.sheets.spreadsheets.values.append({
+                        spreadsheetId: GOOGLE_SPREADSHEET_ID,
+                        range: 'Sheet1!B2',
+                        valueInputOption: 'USER_ENTERED',
+                        resource: { values },
+                    });
+                    showNotification('Export successful! Resetting scores...');
+                    await handleResetAllScores(true);
+                } catch (err) {
+                    showNotification('Error exporting data. Scores were not reset.');
+                    console.error('Sheets API Error:', err);
+                }
+            };
+            if (gapi.client.getToken() === null) { tokenClient.requestAccessToken({prompt: 'consent'}); } 
+            else { tokenClient.requestAccessToken({prompt: ''}); }
+        }
+        
+        async function handleResetAllScores(calledFromExport = false) {
             const batch = writeBatch(db);
             const resetFeats = {};
             metrics.forEach(m => { resetFeats[m.id] = 0; });
-            
             teamMembers.forEach(name => {
                 const memberDocRef = doc(xpCollectionRef, name);
                 batch.update(memberDocRef, { xp: 0, feats: resetFeats });
             });
             try {
                 await batch.commit();
-                showNotification("All scores have been reset to 0!");
+                if(!calledFromExport) showNotification("All scores have been reset to 0!");
             } catch (e) {
-                showNotification("A magical mishap occurred. Could not reset scores.");
+                if(!calledFromExport) showNotification("A magical mishap occurred.");
             }
             resetConfirmModal.style.display = 'none';
         }
-
+        
+        function populateAdminTargetSelect(adminName) {
+            adminTargetSelect.innerHTML = teamMembers.map(name => `<option value="${name}" ${name === adminName ? 'selected' : ''}>${name}</option>`).join('');
+        }
+        
         function updateTooltips() {
             metrics.forEach(metric => {
                 let champions = [];
@@ -452,13 +549,16 @@
                 });
                 const labelEl = document.getElementById(`label-${metric.id}`);
                 if (labelEl) {
+                    const metricData = metrics.find(m => m.id === metric.id);
+                    let tooltipHTML = `<p class="italic text-gray-300 mb-2">"${metricData.description || 'No description.'}"</p>`;
                     if (champions.length > 1) {
-                         labelEl.dataset.tooltip = `Champions: ${champions.join(', ')} (${maxCount})`;
+                         tooltipHTML += `<p><span class="font-bold">Champions:</span> ${champions.join(', ')} (${maxCount})</p>`;
                     } else if (champions.length === 1) {
-                        labelEl.dataset.tooltip = `Champion: ${champions[0]} (${maxCount})`;
+                        tooltipHTML += `<p><span class="font-bold">Champion:</span> ${champions[0]} (${maxCount})</p>`;
                     } else {
-                        labelEl.dataset.tooltip = 'No champion for this feat yet.';
+                        tooltipHTML += '<p>No champion for this feat yet.</p>';
                     }
+                    labelEl.dataset.tooltip = tooltipHTML;
                 }
             });
         }
@@ -466,9 +566,8 @@
         function initializeApp(user) {
             currentUserId = user.uid;
             userIdDisplay.textContent = currentUserId.substring(0, 8) + '...';
-            populateMemberSelect();
-            createXPControls();
             
+            closeModalButton.onclick = () => { modal.style.display = 'none'; };
             addXpButton.addEventListener('click', handleAddXp);
             memberSelect.addEventListener('change', handleSelectionChange);
             submitPasswordButton.addEventListener('click', handlePasswordSubmit);
@@ -476,17 +575,62 @@
             passwordInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') handlePasswordSubmit(); });
             resetScoresButton.addEventListener('click', () => { resetConfirmModal.style.display = 'flex'; });
             cancelResetButton.addEventListener('click', () => { resetConfirmModal.style.display = 'none'; });
-            confirmResetButton.addEventListener('click', handleResetAllScores);
+            confirmResetButton.addEventListener('click', exportAndResetScores);
             closeMilestoneButton.onclick = () => { milestoneModal.style.display = 'none'; };
+            
+            saveFeatXpButton.addEventListener('click', async () => {
+                const newMetrics = [];
+                const inputs = featXpInputsContainer.querySelectorAll('.space-y-1');
+                inputs.forEach(container => {
+                    const labelInput = container.querySelector('input[id^="label-input-"]');
+                    const pointsInput = container.querySelector('input[id^="xp-input-"]');
+                    const descInput = container.querySelector('textarea[id^="desc-input-"]');
+                    const id = labelInput.id.replace('label-input-', '');
+                    
+                    newMetrics.push({
+                        id: id,
+                        label: labelInput.value,
+                        points: parseInt(pointsInput.value) || 0,
+                        description: descInput.value
+                    });
+                });
+                metrics = newMetrics;
+                await updateConfig();
+                showNotification("Feats updated!");
+                createXPControls();
+                updateTooltips();
+            });
 
+            addFeatBtn.addEventListener('click', () => {
+                metrics.push({
+                    id: `feat_${Date.now()}`,
+                    label: 'New Feat',
+                    description: 'A brand new accomplishment!',
+                    points: 1
+                });
+                renderAdminFeatXP();
+            });
+
+            featXpInputsContainer.addEventListener('click', (e) => {
+                if (e.target.dataset.deleteMetricId) {
+                    const idToDelete = e.target.dataset.deleteMetricId;
+                    metrics = metrics.filter(m => m.id !== idToDelete);
+                    renderAdminFeatXP();
+                }
+            });
+
+            addQuestBtn.addEventListener('click', () => { weeklyQuests.push({title: 'New Quest', content: 'Description'}); renderWeeklyQuests(); });
+            removeQuestBtn.addEventListener('click', () => { if(weeklyQuests.length > 0) { weeklyQuests.pop(); renderWeeklyQuests(); }});
+            saveQuestsBtn.addEventListener('click', () => { updateConfig(); showNotification('Weekly Quests saved!'); });
+            
+            addWinnerBtn.addEventListener('click', () => { weeklyWinners.push({name: '', comment: ''}); renderWeeklyWinners(); });
+            removeWinnerBtn.addEventListener('click', () => { if(weeklyWinners.length > 0) { weeklyWinners.pop(); renderWeeklyWinners(); }});
+            saveWinnersBtn.addEventListener('click', () => { updateConfig(); showNotification("Last Week's Heroes saved!"); });
+            
             window.addEventListener('keydown', (e) => {
                 if (e.key === 'Escape' || e.key === ' ') {
-                    if (modal.style.display === 'flex') {
-                        e.preventDefault(); modal.style.display = 'none';
-                    }
-                     if (milestoneModal.style.display === 'flex') {
-                        e.preventDefault(); milestoneModal.style.display = 'none';
-                    }
+                    if (modal.style.display === 'flex') { e.preventDefault(); modal.style.display = 'none'; }
+                    if (milestoneModal.style.display === 'flex') { e.preventDefault(); milestoneModal.style.display = 'none'; }
                 }
             });
 
@@ -505,23 +649,20 @@
             leaderboardBody.addEventListener('click', (e) => {
                 const button = e.target.closest('.admin-btn');
                 if (button && isAdmin) {
-                    const name = button.dataset.name;
-                    const amount = parseInt(button.dataset.amount);
-                    adjustPlayerXP(name, amount);
+                    adjustPlayerXP(button.dataset.name, parseInt(button.dataset.amount));
                 }
             });
             
             xpControlsContainer.addEventListener('mouseover', (e) => {
                 const label = e.target.closest('label');
                 if (label && label.dataset.tooltip) {
-                    tooltipEl.textContent = label.dataset.tooltip;
+                    tooltipEl.innerHTML = label.dataset.tooltip;
                     tooltipEl.style.display = 'block';
                     tooltipEl.style.opacity = '1';
                 }
             });
             xpControlsContainer.addEventListener('mouseout', (e) => {
-                const label = e.target.closest('label');
-                if (label) {
+                if (e.target.closest('label')) {
                     tooltipEl.style.opacity = '0';
                     setTimeout(() => { tooltipEl.style.display = 'none'; }, 200);
                 }
@@ -529,6 +670,22 @@
              xpControlsContainer.addEventListener('mousemove', (e) => {
                 tooltipEl.style.left = `${e.pageX + 15}px`;
                 tooltipEl.style.top = `${e.pageY + 15}px`;
+            });
+            
+            weeklyQuestsContainer.addEventListener('input', (e) => {
+                const index = e.target.dataset.questIndex;
+                const field = e.target.dataset.field;
+                if(index !== undefined && field) {
+                    weeklyQuests[index][field] = e.target.value;
+                }
+            });
+
+            weeklyWinnersContainer.addEventListener('input', (e) => {
+                 const index = e.target.dataset.winnerIndex;
+                const field = e.target.dataset.field;
+                if(index !== undefined && field) {
+                    weeklyWinners[index][field] = e.target.value;
+                }
             });
             
             onSnapshot(xpCollectionRef, (snapshot) => {
@@ -543,13 +700,12 @@
                         if(oldMember) {
                             const oldXp = oldMember.xp || 0;
                             const newXp = newMember.xp || 0;
-                            const milestones = [50, 100];
-                             for (const milestone of milestones) {
+                            [50, 100].forEach(milestone => {
                                 if (oldXp < milestone && newXp >= milestone) {
                                     milestoneMessage.textContent = `${newMember.name} has reached ${milestone} XP!`;
                                     milestoneModal.style.display = 'flex';
                                 }
-                            }
+                            });
                         }
                     });
                 }
@@ -559,6 +715,20 @@
 
                 renderLeaderboard();
                 updateTooltips();
+            });
+
+            onSnapshot(configRef, (doc) => {
+                if(doc.exists()) {
+                    const config = doc.data();
+                    metrics = config.metrics;
+                    weeklyQuests = config.weeklyQuests;
+                    weeklyWinners = config.weeklyWinners;
+                    createXPControls();
+                    renderAdminFeatXP();
+                    renderWeeklyQuests();
+                    renderWeeklyWinners();
+                    updateTooltips(); 
+                }
                 loadingEl.style.display = 'none';
                 mainContentEl.classList.remove('hidden');
             });
@@ -574,9 +744,62 @@
                 const promises = newMembers.map(name => setDoc(doc(xpCollectionRef, name), { name: name, xp: 0, feats: resetFeats }));
                 await Promise.all(promises);
             }
+            const configSnap = await getDoc(configRef);
+            if (!configSnap.exists()) {
+                await setDoc(configRef, {
+                    metrics: [ 
+                        { id: 'nps', label: 'NPS 10', points: 10, description: 'Achieve a Net Promoter Score of 10 from a customer.' }, 
+                        { id: 'quality', label: 'High Quality Score', points: 10, description: 'Receive a Quality Assurance score of 90% or higher.' }, 
+                        { id: 'wow', label: 'WOW Feedback', points: 8, description: 'Receive specific "WOW" feedback from a customer.' }, 
+                        { id: 'resolution', label: 'Fast Resolution', points: 7, description: 'Resolve a customer issue under the team\'s average resolution time.' }, 
+                        { id: 'accuracy', label: 'Accuracy Check', points: 4, description: 'Complete an order review with no inaccuracies found.' }, 
+                        { id: 'positive', label: 'Positive Comment', points: 3, description: 'Receive any positive comment or rating from a customer.' }, 
+                        { id: 'reviewed', label: 'Order Reviewed', points: 2, description: 'Successfully review a customer order.' }, 
+                        { id: 'attention', label: 'Service/Reviewer Attentions Completed', points: 2, description: 'Complete an attention item from the service or reviewer queue.' }, 
+                        { id: 'email', label: 'Email Responded To', points: 2, description: 'Respond to a customer email.' }, 
+                        { id: 'callchat', label: 'Call/Chat Handled', points: 2, description: 'Handle a customer call or live chat.' }, 
+                        { id: 'resolved', label: 'Problem Resolved', points: 2, description: 'Successfully mark a customer problem as resolved.' },
+                    ],
+                    weeklyQuests: [{title: 'The Shield of Service', content: 'As a team, achieve a 95% or higher Service Rate!'}],
+                    weeklyWinners: [{name: 'Khayla McGowan', comment: 'For launching this awesome tracker!'}]
+                });
+            }
         }
+        
+        function gapiLoaded() {
+            gapi.load('client', initializeGapiClient);
+        }
+        async function initializeGapiClient() {
+            await gapi.client.init({
+                discoveryDocs: ["https://sheets.googleapis.com/$discovery/rest?version=v4"],
+            });
+            gapiClient = gapi.client;
+        }
+        function gisLoaded() {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: GOOGLE_CLIENT_ID,
+                scope: GOOGLE_SCOPES,
+                callback: '', // defined dynamically
+            });
+        }
+        (function() {
+            const gapiScript = document.createElement('script');
+            gapiScript.src = 'https://apis.google.com/js/api.js';
+            gapiScript.async = true;
+            gapiScript.defer = true;
+            gapiScript.onload = gapiLoaded;
+            document.body.appendChild(gapiScript);
+
+            const gisScript = document.createElement('script');
+            gisScript.src = 'https://accounts.google.com/gsi/client';
+            gisScript.async = true;
+            gisScript.defer = true;
+            gisScript.onload = gisLoaded;
+            document.body.appendChild(gisScript);
+        })();
 
         window.onload = () => {
+             populateMemberSelect();
              onAuthStateChanged(auth, async (user) => {
                 if (user) {
                     if (!currentUserId) {
@@ -585,8 +808,7 @@
                     }
                 } else {
                     signInAnonymously(auth).catch(error => { 
-                        console.error("Critical authentication failed:", error);
-                        document.getElementById('loading').innerHTML = `<p class="text-red-500">Could not connect to the realm. Please refresh the page.</p>`
+                        document.getElementById('loading').innerHTML = `<p class="text-red-500">Could not connect. Please refresh.</p>`
                     });
                 }
             });
